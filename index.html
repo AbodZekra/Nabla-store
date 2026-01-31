@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>∇ Nabla store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Almarai:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold-dark: #B8860B;
+            --gold-light: #D4AF37;
+            --charcoal: #1A1A1A;
+            --charcoal-light: #2D2D2D;
+            --space-blue: #0A0A2A;
+            --text-light: #F0F0F0;
+            --text-gray: #AAAAAA;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --info: #3498db;
+        }
+
+        body {
+            font-family: 'Exo 2', 'Almarai', sans-serif;
+            background: var(--charcoal);
+            color: var(--text-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== 3D CANVAS ===== */
+        #canvas3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ===== LAYOUT ===== */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            padding: 25px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        header.scrolled {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            z-index: 1002;
+        }
+
+        .logo img {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: brightness(1.1) contrast(1.1) drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+        }
+
+        .logo img:hover {
+            transform: translateY(-2px) scale(1.05);
+            filter: brightness(1.2) contrast(1.2) drop-shadow(0 0 15px rgba(212, 175, 55, 0.6));
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--gold-light);
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold-light);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--gold-light);
+            cursor: pointer;
+            z-index: 1001;
+            padding: 10px;
+        }
+
+        /* ===== MOBILE MENU ===== */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 85%;
+            max-width: 400px;
+            height: 100vh;
+            background: rgba(26, 26, 26, 0.98);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(212, 175, 55, 0.3);
+            z-index: 1000;
+            padding: 100px 30px 30px;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .mobile-menu.active {
+            right: 0;
+        }
+
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .mobile-menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-user-info {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            color: var(--gold-light);
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .mobile-user-info.show {
+            display: flex;
+        }
+
+        .mobile-nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mobile-nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 1.2rem;
+            padding: 15px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mobile-nav-links a i {
+            width: 25px;
+            text-align: center;
+        }
+
+        .mobile-nav-links a:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold-light);
+            transform: translateX(-10px);
+        }
+
+        .mobile-logout-btn {
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+        }
+
+        .mobile-logout-btn.show {
+            display: flex;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 0 50px;
+        }
+
+        .hero-content {
+            max-width: 700px;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--gold-light), #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 1.4rem;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+            color: var(--charcoal);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold-light);
+            border: 2px solid var(--gold-light);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateY(-3px);
+        }
+
+        /* ===== PRODUCTS SECTION ===== */
+        .products {
+            padding: 120px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 70px;
+            color: var(--gold-light);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .product-card {
+            background: rgba(26, 26, 26, 0.575);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--gold-light);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(235deg, var(--gold-dark), var(--gold-light));
+            color: var(--charcoal);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .product-icon {
+            font-size: 2.5rem;
+            color: var(--gold-light);
+            margin-bottom: 20px;
+        }
+
+        .product-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+
+        .product-category {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .product-description {
+            color: var(--text-gray);
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+
+        .product-price {
+            font-size: 2rem;
+            color: var(--gold-light);
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+
+        .product-price span {
+            font-size: 1rem;
+            color: var(--text-gray);
+            font-weight: normal;
+        }
+
+        .product-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .product-features li {
+            padding: 5px 0;
+            color: var(--text-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .product-features li i {
+            color: var(--gold-light);
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features {
+            padding: 120px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 15px;
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--gold-light);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--gold-light);
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--charcoal);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--gold-light);
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: none;
+            border: none;
+            color: var(--gold-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            z-index: 1;
+        }
+
+        .modal-close:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .modal h2 {
+            color: var(--gold-light);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold-light);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        /* ===== MESSAGES SYSTEM ===== */
+        .message-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            max-width: 400px;
+            width: 90%;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid;
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 3000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .message-toast.success {
+            border-color: var(--success);
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .message-toast.error {
+            border-color: var(--danger);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .message-toast.info {
+            border-color: var(--info);
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .message-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .message-toast.success .message-icon {
+            color: var(--success);
+        }
+
+        .message-toast.error .message-icon {
+            color: var(--danger);
+        }
+
+        .message-toast.info .message-icon {
+            color: var(--info);
+        }
+
+        .message-content {
+            flex-grow: 1;
+        }
+
+        .message-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .message-close {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+            padding: 5px;
+            font-family: inherit;
+        }
+
+        .message-close:hover {
+            opacity: 1;
+        }
+
+        /* ===== CONTACT FORM SECTION ===== */
+        .contact-section {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.2);
+            margin-top: 50px;
+        }
+
+        .contact-form-container {
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 15px;
+            padding: 50px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .contact-form-container h3 {
+            text-align: center;
+            color: var(--gold-light);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .contact-form-container .subtitle {
+            text-align: center;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .contact-form .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 60px 0 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 100px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 50px;
+            margin-bottom: 40px;
+        }
+
+        .footer-logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            margin-bottom: 20px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 50%;
+            color: var(--gold-light);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: var(--gold-light);
+            color: var(--charcoal);
+            transform: translateY(-3px);
+        }
+
+        .copyright {
+            text-align: center;
+            color: var(--text-gray);
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        
+        /* Large Desktops (1400px+) */
+        @media (min-width: 1400px) {
+            .hero h1 {
+                font-size: 5rem;
+            }
+            .container {
+                max-width: 1600px;
+                padding: 0 50px;
+            }
+        }
+
+        /* Tablets (768px - 1199px) */
+        @media (max-width: 1199px) {
+            .hero h1 {
+                font-size: 3.5rem;
+            }
+            .section-title {
+                font-size: 2.5rem;
+            }
+            .products-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        /* Mobile Landscape (576px - 767px) */
+        @media (max-width: 767px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            
+            .hero p {
+                font-size: 1.2rem;
+            }
+            
+            .user-info {
+                display: none !important;
+            }
+            
+            .nav-links {
+                display: none !important;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .products-grid,
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 30px 20px;
+            }
+            
+            .contact-form-container {
+                padding: 30px 20px;
+            }
+            
+            .contact-form .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .message-toast {
+                right: 5%;
+                width: 90%;
+                bottom: 10px;
+            }
+        }
+
+        /* Mobile Portrait (up to 575px) */
+        @media (max-width: 575px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .product-card,
+            .feature-card {
+                padding: 30px 20px;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+            
+            .logo img {
+                height: 40px;
+            }
+            
+            .mobile-menu {
+                width: 85%;
+                padding: 80px 20px 20px;
+            }
+        }
+
+        /* Small Mobile (up to 360px) */
+        @media (max-width: 360px) {
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                padding: 14px 20px;
+                font-size: 1rem;
+            }
+            
+            .product-card {
+                padding: 20px 15px;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .product-card:hover,
+            .feature-card:hover,
+            .btn:hover {
+                transform: none;
+            }
+            
+            .btn:active {
+                transform: scale(0.98);
+            }
+            
+            .mobile-nav-links a:active {
+                background: rgba(212, 175, 55, 0.2);
+            }
+        }
+
+        /* Dark Mode Support (Always Dark) */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--charcoal);
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            #canvas3d, .menu-toggle, .mobile-menu, .modal {
+                display: none !important;
+            }
+            
+            body {
+                color: black;
+                background: white;
+            }
+            
+            .hero, .features, .products, .contact-section {
+                padding: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Canvas Container -->
+    <canvas id="canvas3d"></canvas>
+
+    <!-- Messages Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeLoginModal">&times;</button>
+            <h2>تسجيل الدخول</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="userName">اسم المستخدم</label>
+                    <input type="text" id="userName" required placeholder="أدخل اسمك">
+                </div>
+                <div class="form-group">
+                    <label for="whatsappNumber">رقم الواتساب</label>
+                    <input type="tel" id="whatsappNumber" required placeholder="رقم الواتساب للتواصل">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeBookingModal">&times;</button>
+            <h2 id="bookingTitle">حجز المنتج</h2>
+            <form id="bookingForm">
+                <div id="bookingProductInfo" style="background: rgba(212, 175, 55, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <i id="bookingProductIcon" class="fas fa-box" style="font-size: 1.5rem; color: var(--gold-light);"></i>
+                        <div>
+                            <h3 id="bookingProductName" style="margin: 0; color: var(--gold-light);">اسم المنتج</h3>
+                            <p id="bookingProductPrice" style="margin: 5px 0 0; color: var(--text-gray);">السعر: 0 ريال</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bookingNotes">ملاحظات إضافية (اختياري)</label>
+                    <textarea id="bookingNotes" placeholder="أي ملاحظات أو متطلبات خاصة تريد إضافتها..." rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-check"></i> تأكيد الحجز
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeContactModal">&times;</button>
+            <h2>تواصل معنا</h2>
+            <p style="text-align: center; color: var(--text-gray); margin-bottom: 30px;">لأي استفسار أو خدمة ترغب بها، يمكنك مراسلتنا من هنا</p>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="contactName">اسمك</label>
+                    <input type="text" id="contactName" required placeholder="أدخل اسمك">
+                </div>
+                <div class="form-group">
+                    <label for="contactWhatsapp">رقم الواتساب</label>
+                    <input type="tel" id="contactWhatsapp" required placeholder="رقم الواتساب للتواصل">
+                </div>
+                <div class="form-group">
+                    <label for="contactMessage">الرسالة</label>
+                    <textarea id="contactMessage" required placeholder="اكتب رسالتك هنا..." rows="5"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-paper-plane"></i> إرسال الرسالة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-user-info" id="mobileUserInfo">
+            <i class="fas fa-user-circle" style="font-size: 2rem;"></i>
+            <div>
+                <div style="font-weight: 700;" id="mobileUserName"></div>
+                <div style="font-size: 0.9rem; color: var(--text-gray);" id="mobileUserPhone"></div>
+            </div>
+        </div>
+        <div class="mobile-nav-links">
+            <a href="#home" class="mobile-nav-link">
+                <i class="fas fa-home"></i> الرئيسية
+            </a>
+            <a href="#products" class="mobile-nav-link">
+                <i class="fas fa-shopping-cart"></i> المنتجات
+            </a>
+            <a href="#features" class="mobile-nav-link">
+                <i class="fas fa-cogs"></i> خدماتنا
+            </a>
+            <a href="#about" class="mobile-nav-link">
+                <i class="fas fa-info-circle"></i> من نحن
+            </a>
+            <a href="#contact" class="mobile-nav-link">
+                <i class="fas fa-phone"></i> اتصل بنا
+            </a>
+            <a href="#" class="mobile-nav-link" id="mobileLoginLink">
+                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </a>
+            <button class="mobile-logout-btn" id="mobileLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <a href="#" class="logo">
+                <img src="logo.png" alt="Nabla Logo">
+            </a>
+            
+            <div class="user-info" id="userInfo">
+                <span>مرحباً، <span id="currentUserName"></span></span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+            </div>
+            
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="#home">الرئيسية</a>
+                <a href="#products">المنتجات</a>
+                <a href="#features">خدماتنا</a>
+                <a href="#about">من نحن</a>
+                <a href="#contact">اتصل بنا</a>
+                <a href="#" id="loginLink">تسجيل الدخول</a>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero" id="home">
+            <div class="hero-content">
+                <h1>∇ Nabla store</h1>
+                <p>نقدم لك مجموعة من المنتجات الرقمية المتطورة مع توجيه استشاري شخصي لاختيار أنسب لعملك و تعليمك</p>
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" id="viewProductsBtn">
+                        <i class="fas fa-shopping-cart"></i> تصفح المنتجات
+                    </button>
+                    <button class="btn btn-secondary" id="loginBtnHero">
+                        <i class="fas fa-user"></i> تسجيل الدخول
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section class="products" id="products">
+            <h2 class="section-title">منتجاتنا الرقمية</h2>
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be dynamically loaded here -->
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <h2 class="section-title">خدماتنا المتخصصة</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>منتجات الذكاء الاصطناعي</h3>
+                    <p>أدوات متطورة تحول أفكارك إلى واقع، مع توصيات مخصصة بناءً على احتياجاتك</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>حلول VPN آمنة</h3>
+                    <p>اتصالات مشفرة وسريعة مع توجيهك للخدمة الأمثل بناءً على استخدامك</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3>استشارات العملات الرقمية</h3>
+                    <p>تحليل ذكي واختيار مدروس للاستثمارات الرقمية المناسبة لمستوى خبرتك</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <h3>اشتراكات مميزة</h3>
+                    <p>وصول حصري للتطبيقات الرائدة مع توجيهك للباقة المثالية</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Form Section -->
+        <section class="contact-section" id="contact">
+            <div class="contact-form-container">
+                <h3>تواصل معنا مباشرة</h3>
+                <p class="subtitle">إذا كان لديك أي استفسار أو خدمة ترغب بها، يمكنك مراسلتنا من هنا</p>
+                <form id="contactSectionForm" class="contact-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contactSectionName">اسمك</label>
+                            <input type="text" id="contactSectionName" required placeholder="أدخل اسمك">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactSectionWhatsapp">رقم الواتساب</label>
+                            <input type="tel" id="contactSectionWhatsapp" required placeholder="رقم الواتساب للتواصل">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactSectionMessage">الرسالة</label>
+                        <textarea id="contactSectionMessage" required placeholder="اكتب رسالتك هنا..." rows="6"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.2rem;">
+                        <i class="fas fa-paper-plane"></i> إرسال الرسالة
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="about">
+            <div class="footer-content">
+                <div>
+                    <div class="footer-logo">∇ Nabla</div>
+                    <p>الحلول الرقمية الذكية للجيل القادم</p>
+                    <div class="social-links">
+                        <a href="https://wa.me/966551234567" target="_blank" title="واتساب">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                        <a href="https://t.me/nablastore" target="_blank" title="تليجرام">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                        <a href="https://instagram.com/nablastore" target="_blank" title="انستجرام">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://facebook.com/nablastore" target="_blank" title="فيسبوك">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="https://linkedin.com/company/nablastore" target="_blank" title="لينكد إن">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--gold-light); margin-bottom: 15px;">روابط سريعة</h4>
+                    <a href="#home" style="display: block; margin-bottom: 10px; color: var(--text-light); text-decoration: none;">الرئيسية</a>
+                    <a href="#products" style="display: block; margin-bottom: 10px; color: var(--text-light); text-decoration: none;">المنتجات</a>
+                    <a href="#features" style="display: block; margin-bottom: 10px; color: var(--text-light); text-decoration: none;">الخدمات</a>
+                    <a href="#contact" style="display: block; margin-bottom: 10px; color: var(--text-light); text-decoration: none;">الدعم</a>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--gold-light); margin-bottom: 15px;">تواصل معنا</h4>
+                    <p style="margin-bottom: 10px;"><i class="fas fa-envelope"></i> info@nabla.tech</p>
+                    <p style="margin-bottom: 10px;"><i class="fas fa-phone"></i> +966 55 123 4567</p>
+                    <p style="margin-bottom: 10px;"><i class="fas fa-map-marker-alt"></i> الرياض، المملكة العربية السعودية</p>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                © 2024 ∇ Nabla. جميع الحقوق محفوظة
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // ===== PRODUCTS DATA =====
+        const products = [
+            {
+                id: 1,
+                name: "ChatGPT Plus",
+                category: "AI اشتراكات",
+                icon: "fas fa-robot",
+                description: "اشتراك شهري في ChatGPT Plus مع وصول إلى GPT-4 وميزات متقدمة",
+                price: 299,
+                period: "شهري",
+                features: ["وصول إلى GPT-4", "أولوية في أوقات الذروة", "مستندات طويلة", "دعم فني"],
+                badge: "الأكثر طلباً"
+            },
+            {
+                id: 2,
+                name: "Midjourney Pro",
+                category: "AI تصميم",
+                icon: "fas fa-palette",
+                description: "اشتراك Pro في Midjourney لإنشاء صور AI عالية الجودة",
+                price: 399,
+                period: "شهري",
+                features: ["30 ساعة سريعة", "خاصية Relax", "إنشاء صور خاصة", "دعم جماعي"],
+                badge: "جديد"
+            },
+            {
+                id: 3,
+                name: "NordVPN Premium",
+                category: "VPN",
+                icon: "fas fa-shield-alt",
+                description: "اشتراك سنوي في NordVPN مع حماية كاملة وخدمات متقدمة",
+                price: 599,
+                period: "سنوي",
+                features: ["خوادم في 60 دولة", "حماية من التسرب", "kill switch", "دعم 6 أجهزة"],
+                badge: "مميز"
+            },
+            {
+                id: 4,
+                name: "Adobe Creative Cloud",
+                category: "تصميم",
+                icon: "fas fa-film",
+                description: "حزمة كاملة من أدوبي للإبداع والتصميم الاحترافي",
+                price: 899,
+                period: "شهري",
+                features: ["Photoshop", "Premiere Pro", "After Effects", "Illustrator"],
+                badge: "احترافي"
+            },
+            {
+                id: 5,
+                name: "Notion AI",
+                category: "إنتاجية",
+                icon: "fas fa-lightbulb",
+                description: "اشتراك في Notion مع ميزات الذكاء الاصطناعي المتقدمة",
+                price: 199,
+                period: "شهري",
+                features: ["كتابة بالذكاء الاصطناعي", "تلخيص تلقائي", "ترجمة فورية", "دمج مع أدوات"],
+                badge: "منتج"
+            },
+            {
+                id: 6,
+                name: "Surfshark VPN",
+                category: "VPN",
+                icon: "fas fa-user-shield",
+                description: "VPN غير محدود مع حماية متقدمة وخصوصية كاملة",
+                price: 449,
+                period: "سنوي",
+                features: ["أجهزة غير محدودة", "حظر إعلانات", "بحث خاص", "تنبيهات الاختراق"],
+                badge: "اقتصادي"
+            },
+            {
+                id: 7,
+                name: "Claude Pro",
+                category: "AI اشتراكات",
+                icon: "fas fa-brain",
+                description: "اشتراك Pro في Claude AI مع سعة أكبر ودعم متقدم",
+                price: 349,
+                period: "شهري",
+                features: ["سياق أكبر", "مرفقات متعددة", "أولوية الوصول", "دعم فني"],
+                badge: "متقدم"
+            },
+            {
+                id: 8,
+                name: "Canva Pro",
+                category: "تصميم",
+                icon: "fas fa-paint-brush",
+                description: "اشتراك Pro في Canva مع مكتبة كبيرة من القوالب والأصول",
+                price: 249,
+                period: "شهري",
+                features: ["مكتبة قوالب", "خلفيات متحركة", "إزالة الخلفية", "فريق تعاون"],
+                badge: "سهل"
+            }
+        ];
+
+        // ===== MESSAGE SYSTEM =====
+        class MessageSystem {
+            constructor() {
+                this.container = document.getElementById('toastContainer');
+            }
+
+            show(message, type = 'info', duration = 5000) {
+                const toast = document.createElement('div');
+                toast.className = `message-toast ${type}`;
+                
+                const icons = {
+                    success: 'fas fa-check-circle',
+                    error: 'fas fa-exclamation-circle',
+                    info: 'fas fa-info-circle'
+                };
+                
+                toast.innerHTML = `
+                    <i class="message-icon ${icons[type]}"></i>
+                    <div class="message-content">
+                        <div class="message-title">${this.getTitle(type)}</div>
+                        <div class="message-text">${message}</div>
+                    </div>
+                    <button class="message-close">&times;</button>
+                `;
+                
+                this.container.appendChild(toast);
+                
+                // Show with animation
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 10);
+                
+                // Close button
+                toast.querySelector('.message-close').addEventListener('click', () => {
+                    this.hide(toast);
+                });
+                
+                // Auto hide
+                if (duration > 0) {
+                    setTimeout(() => {
+                        this.hide(toast);
+                    }, duration);
+                }
+                
+                return toast;
+            }
+
+            hide(toast) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+
+            getTitle(type) {
+                const titles = {
+                    success: 'نجاح',
+                    error: 'خطأ',
+                    info: 'معلومة'
+                };
+                return titles[type] || 'رسالة';
+            }
+        }
+
+        // ===== USER MANAGEMENT =====
+        class UserManager {
+            constructor() {
+                this.currentUser = null;
+                this.loadUser();
+            }
+
+            loadUser() {
+                const userData = localStorage.getItem('nabla_user');
+                if (userData) {
+                    this.currentUser = JSON.parse(userData);
+                }
+            }
+
+            saveUser(user) {
+                this.currentUser = user;
+                localStorage.setItem('nabla_user', JSON.stringify(user));
+            }
+
+            logout() {
+                this.currentUser = null;
+                localStorage.removeItem('nabla_user');
+            }
+
+            isLoggedIn() {
+                return this.currentUser !== null;
+            }
+
+            getUser() {
+                return this.currentUser;
+            }
+        }
+
+        // ===== TELEGRAM BOT =====
+        class TelegramBot {
+            constructor() {
+                this.botToken = '8504840074:AAGzSqcY-M2JDLfiCqmIsvGipkXtK6XFDWw';
+                this.chatId = '-1003872322643';
+                this.whatsappLink = (user) => `https://wa.me/${user.whatsapp}`;
+            }
+
+            async sendBooking(user, product, notes = '') {
+                const whatsappLink = `${this.whatsappLink(user)}?text=${encodeURIComponent(`اهلا وسهلا استاذ ${user.name} لقد قمت بطلب ${product.name} بسعر ${product.price} ريال لاكمال عملية للحصول على الخدمة يمكنك مراسلتنا هنا`)}`;
+                
+                const message = `
+📦 **حجز جديد من متجر Nabla**
+
+👤 **العميل:** ${user.name}
+📱 **رقم الواتساب:** ${user.whatsapp}
+
+🛒 **المنتج:** ${product.name}
+💰 **السعر:** ${product.price} ريال
+📝 **الفئة:** ${product.category}
+📋 **ملاحظات:** ${notes || 'لا توجد ملاحظات'}
+
+🔗 **رابط التواصل المباشر:** ${whatsappLink}
+                `;
+
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: message,
+                            parse_mode: 'Markdown'
+                        })
+                    });
+
+                    const data = await response.json();
+                    return data.ok;
+                } catch (error) {
+                    console.error('Error sending to Telegram:', error);
+                    return false;
+                }
+            }
+
+            async sendContactMessage(user, message) {
+                const whatsappLink = `${this.whatsappLink}?text=${encodeURIComponent(`شكراً لك ${user.name}، سنتواصل معك قريباً بخصوص استفسارك`)}`;
+                
+                const telegramMessage = `
+📩 **رسالة تواصل جديدة**
+
+👤 **العميل:** ${user.name}
+📱 **رقم الواتساب:** ${user.whatsapp}
+
+📝 **الرسالة:**
+${message}
+
+🔗 **رابط التواصل المباشر:** ${whatsappLink}
+                `;
+
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: telegramMessage,
+                            parse_mode: 'Markdown'
+                        })
+                    });
+
+                    const data = await response.json();
+                    return data.ok;
+                } catch (error) {
+                    console.error('Error sending to Telegram:', error);
+                    return false;
+                }
+            }
+        }
+
+        // ===== APPLICATION =====
+        class NablaStore {
+            constructor() {
+                this.userManager = new UserManager();
+                this.telegramBot = new TelegramBot();
+                this.messageSystem = new MessageSystem();
+                this.currentBookingProduct = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.renderProducts();
+                this.updateUI();
+                this.setupMobileMenu();
+                this.setupContactForms();
+            }
+
+            setupEventListeners() {
+                // Login buttons
+                const loginBtnHero = document.getElementById('loginBtnHero');
+                if (loginBtnHero) {
+                    loginBtnHero.addEventListener('click', () => this.showLoginModal());
+                }
+
+                const loginLink = document.getElementById('loginLink');
+                if (loginLink) {
+                    loginLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.showLoginModal();
+                    });
+                }
+
+                const mobileLoginLink = document.getElementById('mobileLoginLink');
+                if (mobileLoginLink) {
+                    mobileLoginLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.showLoginModal();
+                        this.hideMobileMenu();
+                    });
+                }
+
+                // Modal close buttons
+                const closeLoginModal = document.getElementById('closeLoginModal');
+                if (closeLoginModal) {
+                    closeLoginModal.addEventListener('click', () => this.hideLoginModal());
+                }
+
+                const closeBookingModal = document.getElementById('closeBookingModal');
+                if (closeBookingModal) {
+                    closeBookingModal.addEventListener('click', () => this.hideBookingModal());
+                }
+
+                const closeContactModal = document.getElementById('closeContactModal');
+                if (closeContactModal) {
+                    closeContactModal.addEventListener('click', () => this.hideContactModal());
+                }
+
+                // View products button
+                const viewProductsBtn = document.getElementById('viewProductsBtn');
+                if (viewProductsBtn) {
+                    viewProductsBtn.addEventListener('click', () => {
+                        document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+                    });
+                }
+
+                // Forms
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleLogin();
+                    });
+                }
+
+                const bookingForm = document.getElementById('bookingForm');
+                if (bookingForm) {
+                    bookingForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleBooking();
+                    });
+                }
+
+                // Logout buttons
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', () => this.handleLogout());
+                }
+
+                const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+                if (mobileLogoutBtn) {
+                    mobileLogoutBtn.addEventListener('click', () => {
+                        this.handleLogout();
+                        this.hideMobileMenu();
+                    });
+                }
+
+                // Close modals on outside click
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            this.hideModal(modal);
+                        }
+                    });
+                });
+
+                // Escape key to close modals
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.hideAllModals();
+                        this.hideMobileMenu();
+                    }
+                });
+            }
+
+            setupContactForms() {
+                // Contact modal form
+                const contactForm = document.getElementById('contactForm');
+                if (contactForm) {
+                    contactForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleContact('contactForm');
+                    });
+                }
+
+                // Contact section form
+                const contactSectionForm = document.getElementById('contactSectionForm');
+                if (contactSectionForm) {
+                    contactSectionForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleContact('contactSectionForm');
+                    });
+                }
+            }
+
+            setupMobileMenu() {
+                const menuToggle = document.getElementById('menuToggle');
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', () => this.toggleMobileMenu());
+                }
+
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.addEventListener('click', () => this.hideMobileMenu());
+                }
+
+                // Mobile navigation links
+                document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        if (link.hash && link.hash !== '#') {
+                            e.preventDefault();
+                            const targetElement = document.querySelector(link.hash);
+                            if (targetElement) {
+                                this.hideMobileMenu();
+                                window.scrollTo({
+                                    top: targetElement.offsetTop - 80,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+
+            toggleMobileMenu() {
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+                const menuToggle = document.getElementById('menuToggle');
+
+                if (mobileMenu.classList.contains('active')) {
+                    this.hideMobileMenu();
+                } else {
+                    this.showMobileMenu();
+                }
+            }
+
+            showMobileMenu() {
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+                const menuToggle = document.getElementById('menuToggle');
+
+                mobileMenu.classList.add('active');
+                mobileMenuOverlay.classList.add('active');
+                menuToggle.innerHTML = '<i class="fas fa-times"></i>';
+                document.body.style.overflow = 'hidden';
+            }
+
+            hideMobileMenu() {
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+                const menuToggle = document.getElementById('menuToggle');
+
+                mobileMenu.classList.remove('active');
+                mobileMenuOverlay.classList.remove('active');
+                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                document.body.style.overflow = '';
+            }
+
+            showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            hideModal(modal) {
+                modal.classList.remove('active');
+                this.hideAllModals();
+            }
+
+            hideAllModals() {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+                document.body.style.overflow = '';
+            }
+
+            showLoginModal() {
+                this.showModal('loginModal');
+            }
+
+            hideLoginModal() {
+                const modal = document.getElementById('loginModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+                document.getElementById('loginForm').reset();
+                document.body.style.overflow = '';
+            }
+
+            showBookingModal(product) {
+                this.currentBookingProduct = product;
+                document.getElementById('bookingProductName').textContent = product.name;
+                document.getElementById('bookingProductPrice').textContent = `السعر: ${product.price} ريال / ${product.period}`;
+                document.getElementById('bookingProductIcon').className = product.icon;
+                document.getElementById('bookingNotes').value = '';
+                this.showModal('bookingModal');
+            }
+
+            hideBookingModal() {
+                const modal = document.getElementById('bookingModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+                this.currentBookingProduct = null;
+                document.body.style.overflow = '';
+            }
+
+            showContactModal() {
+                // Auto-fill contact form if user is logged in
+                if (this.userManager.isLoggedIn()) {
+                    const user = this.userManager.getUser();
+                    document.getElementById('contactName').value = user.name;
+                    document.getElementById('contactWhatsapp').value = user.whatsapp;
+                } else {
+                    document.getElementById('contactName').value = '';
+                    document.getElementById('contactWhatsapp').value = '';
+                }
+                document.getElementById('contactMessage').value = '';
+                this.showModal('contactModal');
+            }
+
+            hideContactModal() {
+                const modal = document.getElementById('contactModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+                document.getElementById('contactForm').reset();
+                document.body.style.overflow = '';
+            }
+
+            handleLogin() {
+                const userName = document.getElementById('userName').value.trim();
+                const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+
+                if (!userName || !whatsappNumber) {
+                    this.messageSystem.show('يرجى ملء جميع الحقول', 'error');
+                    return;
+                }
+
+                const user = {
+                    name: userName,
+                    whatsapp: whatsappNumber,
+                    joinedAt: new Date().toISOString()
+                };
+
+                this.userManager.saveUser(user);
+                this.hideLoginModal();
+                this.updateUI();
+                
+                this.messageSystem.show(`مرحباً ${user.name}! تم تسجيل الدخول بنجاح`, 'success');
+                
+                // Animate user info
+                gsap.from('.user-info', {
+                    duration: 0.5,
+                    y: -20,
+                    opacity: 0,
+                    ease: 'power2.out'
+                });
+            }
+
+            handleLogout() {
+                this.userManager.logout();
+                this.updateUI();
+                this.messageSystem.show('تم تسجيل الخروج بنجاح', 'info');
+            }
+
+            async handleBooking() {
+                if (!this.userManager.isLoggedIn()) {
+                    this.messageSystem.show('يرجى تسجيل الدخول أولاً لحجز المنتج', 'error');
+                    this.hideBookingModal();
+                    this.showLoginModal();
+                    return;
+                }
+
+                const user = this.userManager.getUser();
+                const notes = document.getElementById('bookingNotes').value.trim();
+                const product = this.currentBookingProduct;
+
+                const loadingToast = this.messageSystem.show('جاري إرسال الحجز...', 'info', 0);
+                
+                const success = await this.telegramBot.sendBooking(user, product, notes);
+                
+                this.messageSystem.hide(loadingToast);
+                
+                if (success) {
+                    this.messageSystem.show('تم إرسال حجزك بنجاح! سيتواصل معك فريق الدعم قريباً.', 'success');
+                    this.hideBookingModal();
+                } else {
+                    this.messageSystem.show('حدث خطأ في إرسال الحجز. يرجى المحاولة مرة أخرى.', 'error');
+                }
+            }
+
+            async handleContact(formType) {
+                let nameInput, whatsappInput, messageInput;
+                
+                if (formType === 'contactForm') {
+                    nameInput = document.getElementById('contactName');
+                    whatsappInput = document.getElementById('contactWhatsapp');
+                    messageInput = document.getElementById('contactMessage');
+                } else if (formType === 'contactSectionForm') {
+                    nameInput = document.getElementById('contactSectionName');
+                    whatsappInput = document.getElementById('contactSectionWhatsapp');
+                    messageInput = document.getElementById('contactSectionMessage');
+                } else {
+                    return;
+                }
+
+                const name = nameInput.value.trim();
+                const whatsapp = whatsappInput.value.trim();
+                const message = messageInput.value.trim();
+
+                if (!name || !whatsapp || !message) {
+                    this.messageSystem.show('يرجى ملء جميع الحقول', 'error');
+                    return;
+                }
+
+                const user = {
+                    name: name,
+                    whatsapp: whatsapp
+                };
+
+                const loadingToast = this.messageSystem.show('جاري إرسال الرسالة...', 'info', 0);
+                
+                const success = await this.telegramBot.sendContactMessage(user, message);
+                
+                this.messageSystem.hide(loadingToast);
+                
+                if (success) {
+                    this.messageSystem.show('تم إرسال رسالتك بنجاح! سيتواصل معك فريق الدعم قريباً.', 'success');
+                    
+                    if (formType === 'contactForm') {
+                        this.hideContactModal();
+                        document.getElementById('contactForm').reset();
+                    } else {
+                        document.getElementById('contactSectionForm').reset();
+                    }
+                } else {
+                    this.messageSystem.show('حدث خطأ في إرسال الرسالة. يرجى المحاولة مرة أخرى.', 'error');
+                }
+            }
+
+            bookProduct(product) {
+                if (!this.userManager.isLoggedIn()) {
+                    this.messageSystem.show('يرجى تسجيل الدخول أولاً لحجز المنتج', 'error');
+                    this.showLoginModal();
+                    return;
+                }
+
+                this.showBookingModal(product);
+            }
+
+            renderProducts() {
+                const productsGrid = document.getElementById('productsGrid');
+                if (!productsGrid) return;
+                
+                productsGrid.innerHTML = '';
+
+                products.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        ${product.badge ? `<div class="product-badge">${product.badge}</div>` : ''}
+                        <div class="product-icon">
+                            <i class="${product.icon}"></i>
+                        </div>
+                        <h3>${product.name}</h3>
+                        <div class="product-category">
+                            <i class="fas fa-tag"></i> ${product.category}
+                        </div>
+                        <p class="product-description">${product.description}</p>
+                        <div class="product-price">
+                            ${product.price} $<span>/ ${product.period}</span>
+                        </div>
+                        <ul class="product-features">
+                            ${product.features.map(feature => `<li><i class="fas fa-check"></i> ${feature}</li>`).join('')}
+                        </ul>
+                        <button class="btn btn-primary book-btn" data-id="${product.id}" style="width: 100%;">
+                            <i class="fas fa-shopping-cart"></i> حجز الآن
+                        </button>
+                    `;
+                    productsGrid.appendChild(productCard);
+                });
+
+                // Add event listeners to book buttons
+                document.querySelectorAll('.book-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const productId = parseInt(e.target.closest('.book-btn').dataset.id);
+                        const product = products.find(p => p.id === productId);
+                        this.bookProduct(product);
+                    });
+                });
+
+                // Animate product cards
+                gsap.from('.product-card', {
+                    duration: 0.8,
+                    y: 50,
+                    opacity: 0,
+                    stagger: 0.1,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: '.products',
+                        start: 'top 80%',
+                        toggleActions: 'play none none none'
+                    }
+                });
+            }
+
+            updateUI() {
+                const userInfo = document.getElementById('userInfo');
+                const mobileUserInfo = document.getElementById('mobileUserInfo');
+                const loginLink = document.getElementById('loginLink');
+                const mobileLoginLink = document.getElementById('mobileLoginLink');
+                const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+                const userNameSpan = document.getElementById('currentUserName');
+                const mobileUserName = document.getElementById('mobileUserName');
+                const mobileUserPhone = document.getElementById('mobileUserPhone');
+
+                if (this.userManager.isLoggedIn()) {
+                    const user = this.userManager.getUser();
+                    // Desktop
+                    if (userInfo) userInfo.style.display = 'flex';
+                    if (loginLink) loginLink.style.display = 'none';
+                    if (userNameSpan) userNameSpan.textContent = user.name;
+                    
+                    // Mobile
+                    if (mobileUserInfo) {
+                        mobileUserInfo.classList.add('show');
+                        mobileUserInfo.style.display = 'flex';
+                    }
+                    if (mobileLoginLink) mobileLoginLink.style.display = 'none';
+                    if (mobileLogoutBtn) mobileLogoutBtn.classList.add('show');
+                    if (mobileUserName) mobileUserName.textContent = user.name;
+                    if (mobileUserPhone) mobileUserPhone.textContent = user.whatsapp;
+
+                    // Auto-fill contact section form
+                    const contactSectionName = document.getElementById('contactSectionName');
+                    const contactSectionWhatsapp = document.getElementById('contactSectionWhatsapp');
+                    if (contactSectionName) contactSectionName.value = user.name;
+                    if (contactSectionWhatsapp) contactSectionWhatsapp.value = user.whatsapp;
+                } else {
+                    // Desktop
+                    if (userInfo) userInfo.style.display = 'none';
+                    if (loginLink) loginLink.style.display = 'block';
+                    
+                    // Mobile
+                    if (mobileUserInfo) {
+                        mobileUserInfo.classList.remove('show');
+                        mobileUserInfo.style.display = 'none';
+                    }
+                    if (mobileLoginLink) mobileLoginLink.style.display = 'block';
+                    if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('show');
+
+                    // Clear contact section form
+                    const contactSectionName = document.getElementById('contactSectionName');
+                    const contactSectionWhatsapp = document.getElementById('contactSectionWhatsapp');
+                    if (contactSectionName) contactSectionName.value = '';
+                    if (contactSectionWhatsapp) contactSectionWhatsapp.value = '';
+                }
+            }
+        }
+
+        // ===== 3D BACKGROUND SETUP =====
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('canvas3d'),
+            alpha: true,
+            antialias: true
+        });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x444444);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xD4AF37, 1);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Gold particles (Nabla symbol inspired)
+        const particleGeometry = new THREE.BufferGeometry();
+        const particleCount = 2000;
+        const posArray = new Float32Array(particleCount * 3);
+
+        for(let i = 0; i < particleCount * 3; i++) {
+            const x = (Math.random() - 0.5) * 20;
+            const y = (Math.random() - 0.5) * 20;
+            const z = (Math.random() - 0.5) * 20;
+            
+            if(Math.abs(x) + Math.abs(y) < 10) {
+                posArray[i] = x;
+                posArray[i + 1] = y;
+                posArray[i + 2] = z;
+                i += 2;
+            }
+        }
+
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.05,
+            color: 0xD4AF37,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particlesMesh = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particlesMesh);
+
+        // Main Nabla Symbol
+        const createNablaSymbol = () => {
+            const group = new THREE.Group();
+            
+            const geometry = new THREE.ConeGeometry(0.5, 1.5, 3);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xB8860B,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const triangle = new THREE.Mesh(geometry, material);
+            triangle.rotation.x = Math.PI;
+            group.add(triangle);
+            
+            const glowGeometry = new THREE.SphereGeometry(0.8, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xD4AF37,
+                transparent: true,
+                opacity: 0.2
+            });
+            
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            group.add(glow);
+            
+            return group;
+        };
+
+        const nablaSymbol = createNablaSymbol();
+        nablaSymbol.position.set(0, 0, -5);
+        scene.add(nablaSymbol);
+
+        camera.position.z = 5;
+
+        // Mouse interaction
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 50 - 25;
+            mouseY = -(event.clientY / window.innerHeight) * 50 + 25;
+        });
+
+        // Animation
+        const clock = new THREE.Clock();
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+            
+            const elapsedTime = clock.getElapsedTime();
+            
+            particlesMesh.rotation.y = elapsedTime * 0.1;
+            particlesMesh.rotation.x = elapsedTime * 0.05;
+            
+            nablaSymbol.rotation.y = elapsedTime * 1.5;
+            nablaSymbol.rotation.x = Math.sin(elapsedTime * 0.5);
+            
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            
+            renderer.render(scene, camera);
+        };
+
+        // ===== RESPONSIVE HANDLING =====
+        const handleResize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    e.preventDefault();
+                    
+                    if (window.innerWidth <= 767) {
+                        store.hideMobileMenu();
+                    }
+                    
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Add open contact modal button event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const openContactBtn = document.createElement('button');
+            openContactBtn.className = 'btn btn-secondary';
+            openContactBtn.id = 'openContactBtn';
+            openContactBtn.innerHTML = '<i class="fas fa-envelope"></i> تواصل معنا';
+            openContactBtn.addEventListener('click', () => store.showContactModal());
+            
+            const ctaButtons = document.querySelector('.cta-buttons');
+            if (ctaButtons) {
+                ctaButtons.appendChild(openContactBtn);
+            }
+        });
+
+        // GSAP Animations
+        gsap.from('.hero h1', {
+            duration: 1.5,
+            y: 50,
+            opacity: 0,
+            ease: 'power3.out'
+        });
+
+        gsap.from('.hero p', {
+            duration: 1.5,
+            y: 30,
+            opacity: 0,
+            delay: 0.3,
+            ease: 'power3.out'
+        });
+
+        gsap.from('.cta-buttons', {
+            duration: 1.5,
+            y: 30,
+            opacity: 0,
+            delay: 0.6,
+            ease: 'power3.out'
+        });
+
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (header) {
+                const scrollPosition = window.scrollY;
+                
+                if (scrollPosition > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+        });
+
+        // Initialize store application
+        const store = new NablaStore();
+
+        // Start animations
+        animate();
+        handleResize();
+    </script>
+</body>
+</html>
