@@ -6,22 +6,26 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/**/*",
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "products-data.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.css",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1",
-      "methods": ["GET", "POST", "OPTIONS"]
+      "dest": "/api/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/$1"
     }
-  ],
-  "env": {
-    "NODE_VERSION": "18.x"
-  }
+  ]
 }
