@@ -9,9 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <!-- تضمين ملف الإعدادات - سيكون خارج git -->
-    <script src="https://gist.githubusercontent.com/AbodZekra/0dd65718425f08c8e84d596773bb6210/raw/80d099ee797357088098c7df00651b426cdb6c95/config.js"></script>
+    <!-- تضمين ملف المنتجات فقط -->
     <script src="products-data.js"></script>
+    <!-- حذف config.js نهائياً -->
     <style>
         /* ===== RESET & BASE ===== */
         * {
@@ -922,7 +922,7 @@
             }
         }
 
-                /* ===== DEVELOPER CREDIT ===== */
+        /* ===== DEVELOPER CREDIT ===== */
         .developer-credit {
             text-align: center;
             margin-top: 15px;
@@ -1117,6 +1117,9 @@
                     <button class="btn btn-primary" id="viewProductsBtn">
                         <i class="fas fa-shopping-cart"></i> تصفح المنتجات
                     </button>
+                    <button class="btn btn-secondary" id="openContactBtn">
+                        <i class="fas fa-envelope"></i> تواصل معنا
+                    </button>
                 </div>
             </div>
         </section>
@@ -1234,11 +1237,25 @@
     </div>
 
     <!-- JavaScript -->
+    <script>
+        // ===== إعدادات API (ضَع رابطك هنا) =====
+        const API_CONFIG = {
+            // استبدل هذا برابط API الخاص بك على Vercel
+            // مثال: https://nabla-store.vercel.app/api/telegram
+            endpoint: 'https://nabla-store.vercel.app/api/telegram',
+            
+            // روابط التواصل
+            whatsapp: 'https://wa.me/79610195064',
+            telegram: 'https://t.me/nablastore',
+            email: 'mailto:nablastore3@gmail.com',
+            
+            // إعدادات النسخ الاحتياطي
+            enableBackup: true,
+            maxBackupItems: 10
+        };
 
-    
-    <script >
         // ===== PRODUCTS DATA =====
-        const products = window.nablaProducts;
+        const products = window.nablaProducts || [];
 
         // ===== MESSAGE SYSTEM =====
         class MessageSystem {
@@ -1314,15 +1331,25 @@
             }
 
             loadUser() {
-                const userData = localStorage.getItem('nabla_user');
-                if (userData) {
-                    this.currentUser = JSON.parse(userData);
+                try {
+                    const userData = localStorage.getItem('nabla_user');
+                    if (userData) {
+                        this.currentUser = JSON.parse(userData);
+                    }
+                } catch (error) {
+                    console.error('خطأ في تحميل بيانات المستخدم:', error);
                 }
             }
 
             saveUser(user) {
-                this.currentUser = user;
-                localStorage.setItem('nabla_user', JSON.stringify(user));
+                try {
+                    this.currentUser = user;
+                    localStorage.setItem('nabla_user', JSON.stringify(user));
+                    return true;
+                } catch (error) {
+                    console.error('خطأ في حفظ بيانات المستخدم:', error);
+                    return false;
+                }
             }
 
             logout() {
@@ -1339,92 +1366,212 @@
             }
         }
 
-        // ===== TELEGRAM BOT =====
+        // ===== TELEGRAM BOT (المُحدَّث ليعمل مع Vercel API) =====
         class TelegramBot {
             constructor() {
-                // التحقق من وجود ملف الإعدادات
-                if (typeof CONFIG === 'undefined') {
-                    console.error('ملف الإعدادات غير موجود! يرجى إنشاء ملف config.js');
-                    throw new Error('ملف الإعدادات غير موجود');
-                }
+                this.apiEndpoint = API_CONFIG.endpoint;
+                this.backupKey = 'nabla_backups';
+                this.maxBackupItems = API_CONFIG.maxBackupItems;
                 
-                this.botToken = CONFIG.BOT_TOKEN;
-                this.chatId = CONFIG.CHAT_ID;
-                this.whatsappLink = (user) => `https://wa.me/${user.whatsapp}`;
+                // اختبار الاتصال عند الإنشاء
+                this.testConnection().then(isConnected => {
+                    console.log(`🌐 حالة الاتصال بالـ API: ${isConnected ? '✅ متصل' : '❌ غير متصل'}`);
+                });
             }
 
             async sendBooking(user, product, notes = '') {
-                const whatsappLink = `${this.whatsappLink(user)}?text=${encodeURIComponent(`السلام عليكم ورحمة الله وبركاته  \nاهلا وسهلا استاذ  ${user.name} لقد قمت بطلب ${product.name} بسعر ${product.price} ريال لاكمال العملية والحصول على الخدمة الكاملة يمكنك مراسلتنا هنا`)}`;
-                
-                const message = `
-📦 **حجز جديد من متجر Nabla**
-
-👤 **العميل:** ${user.name}
-📱 **رقم الواتساب:** ${user.whatsapp}
-
-🛒 **المنتج:** ${product.name}
-💰 **السعر:** ${product.price} ريال
-📝 **الفئة:** ${product.category}
-📋 **ملاحظات:** ${notes || 'لا توجد ملاحظات'}
-
-🔗 **رابط التواصل المباشر:** ${whatsappLink}
-                `;
+                const requestData = {
+                    type: 'booking',
+                    user: {
+                        name: user.name,
+                        whatsapp: user.whatsapp,
+                        phone: this.cleanPhoneNumber(user.whatsapp)
+                    },
+                    product: {
+                        name: product.name,
+                        price: product.price,
+                        currency: 'ريال',
+                        category: product.category || 'عام',
+                        period: product.period || 'شهري',
+                        duration: product.period || 'شهري',
+                        notes: notes || '',
+                        features: product.features || []
+                    },
+                    timestamp: new Date().toISOString()
+                };
 
                 try {
-                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                    // إرسال الطلب إلى API الخاص بك على Vercel
+                    const response = await fetch(this.apiEndpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json'
                         },
-                        body: JSON.stringify({
-                            chat_id: this.chatId,
-                            text: message,
-                            parse_mode: 'Markdown'
-                        })
+                        body: JSON.stringify(requestData),
+                        // إضافة timeout لمنع التجميد
+                        signal: AbortSignal.timeout(10000)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`خطأ في السيرفر: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        console.log('✅ تم إرسال الحجز بنجاح:', data);
+                        
+                        // إذا كان هناك رابط واتساب في الرد، نعرضه
+                        if (data.whatsappLink) {
+                            console.log('🔗 رابط التواصل مع العميل:', data.whatsappLink);
+                        }
+                        
+                        return {
+                            success: true,
+                            message: data.message || 'تم إرسال الحجز بنجاح!',
+                            messageId: data.messageId,
+                            whatsappLink: data.whatsappLink,
+                            timestamp: data.timestamp
+                        };
+                    } else {
+                        throw new Error(data.message || 'حدث خطأ غير معروف');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ خطأ في إرسال الحجز:', error);
+                    
+                    // حفظ نسخة احتياطية
+                    this.saveBackup('booking', requestData);
+                    
+                    // إنشاء رابط واتساب بديل
+                    const whatsappUrl = this.createWhatsAppLink(user, product, notes);
+                    
+                    return {
+                        success: false,
+                        error: error.message,
+                        fallback: true,
+                        whatsappLink: whatsappUrl,
+                        manualMessage: 'يمكنك التواصل معنا مباشرة عبر الواتساب لإكمال الطلب:'
+                    };
+                }
+            }
+
+            async sendContactMessage(user, messageText) {
+                const requestData = {
+                    type: 'contact',
+                    user: {
+                        name: user.name,
+                        whatsapp: user.whatsapp,
+                        phone: this.cleanPhoneNumber(user.whatsapp)
+                    },
+                    message: messageText,
+                    timestamp: new Date().toISOString()
+                };
+
+                try {
+                    const response = await fetch(this.apiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData),
+                        signal: AbortSignal.timeout(10000)
                     });
 
                     const data = await response.json();
-                    return data.ok;
+                    
+                    if (data.success) {
+                        return {
+                            success: true,
+                            message: data.message || 'تم إرسال رسالتك بنجاح!'
+                        };
+                    } else {
+                        throw new Error(data.message || 'حدث خطأ في الإرسال');
+                    }
+                    
                 } catch (error) {
-                    console.error('Error sending to Telegram:', error);
+                    console.error('❌ خطأ في إرسال رسالة التواصل:', error);
+                    
+                    // حفظ نسخة احتياطية
+                    this.saveBackup('contact', requestData);
+                    
+                    // إنشاء رابط واتساب بديل
+                    const whatsappUrl = this.createWhatsAppLink(user, {name: 'رسالة تواصل'}, messageText);
+                    
+                    return {
+                        success: false,
+                        fallback: true,
+                        whatsappLink: whatsappUrl,
+                        manualMessage: 'يمكنك مراسلتنا مباشرة على الواتساب:'
+                    };
+                }
+            }
+
+            // ===== دوال مساعدة =====
+            
+            cleanPhoneNumber(phone) {
+                return phone.replace(/[^0-9]/g, '');
+            }
+
+            createWhatsAppLink(user, product, notes = '') {
+                const phone = this.cleanPhoneNumber(user.whatsapp);
+                const userName = encodeURIComponent(user.name);
+                const productName = encodeURIComponent(product.name || 'طلب');
+                const productPrice = product.price || 'غير محدد';
+                const userNotes = encodeURIComponent(notes || 'لا توجد ملاحظات');
+                
+                const message = `السلام عليكم ورحمة الله وبركاته 🌟\n\nأهلاً وسهلاً بك ${userName}!\n\nطلب: ${productName}\nالسعر: ${productPrice} ريال\n\nملاحظاتي: ${userNotes}\n\nشكراً لثقتك بمتجر نابلا!`;
+                
+                return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            }
+
+            async testConnection() {
+                try {
+                    const response = await fetch(this.apiEndpoint, {
+                        method: 'OPTIONS'
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.log('⚠️ لا يمكن الوصول إلى API:', error.message);
                     return false;
                 }
             }
 
-            async sendContactMessage(user, message) {
-                const whatsappLink = `${this.whatsappLink(user)}?text=${encodeURIComponent(`شكراً لك ${user.name}، سنتواصل معك قريباً بخصوص استفسارك`)}`;
+            saveBackup(type, data) {
+                if (!API_CONFIG.enableBackup) return;
                 
-                const telegramMessage = `
-📩 **رسالة تواصل جديدة**
-
-👤 **العميل:** ${user.name}
-📱 **رقم الواتساب:** ${user.whatsapp}
-
-📝 **الرسالة:**
-${message}
-
-🔗 **رابط التواصل المباشر:** ${whatsappLink}
-                `;
-
                 try {
-                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: this.chatId,
-                            text: telegramMessage,
-                            parse_mode: 'Markdown'
-                        })
+                    const backups = JSON.parse(localStorage.getItem(this.backupKey) || '[]');
+                    
+                    backups.push({
+                        type: type,
+                        data: data,
+                        timestamp: new Date().toISOString(),
+                        id: Date.now()
                     });
-
-                    const data = await response.json();
-                    return data.ok;
+                    
+                    // حفظ آخر 10 عناصر فقط
+                    const trimmedBackups = backups.slice(-this.maxBackupItems);
+                    localStorage.setItem(this.backupKey, JSON.stringify(trimmedBackups));
+                    
+                    console.log(`💾 تم حفظ نسخة احتياطية (${type})`);
+                    
                 } catch (error) {
-                    console.error('Error sending to Telegram:', error);
-                    return false;
+                    console.error('❌ تعذر حفظ النسخة الاحتياطية:', error);
                 }
+            }
+
+            getBackups() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.backupKey) || '[]');
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            clearBackups() {
+                localStorage.removeItem(this.backupKey);
             }
         }
 
@@ -1433,24 +1580,8 @@ ${message}
             constructor() {
                 this.userManager = new UserManager();
                 this.messageSystem = new MessageSystem();
+                this.telegramBot = new TelegramBot(); // دائماً ننشئ بوت حقيقي
                 this.currentBookingProduct = null;
-                
-                try {
-                    this.telegramBot = new TelegramBot();
-                } catch (error) {
-                    console.warn('تعذر تهيئة بوت التليجرام. تأكد من إنشاء ملف config.js');
-                    // إنشاء بديل وهمي للبوت لأغراض التطوير
-                    this.telegramBot = {
-                        sendBooking: async () => {
-                            console.log('تطوير: تم محاكاة إرسال حجز');
-                            return true;
-                        },
-                        sendContactMessage: async () => {
-                            console.log('تطوير: تم محاكاة إرسال رسالة تواصل');
-                            return true;
-                        }
-                    };
-                }
                 
                 this.init();
             }
@@ -1461,6 +1592,18 @@ ${message}
                 this.updateUI();
                 this.setupMobileMenu();
                 this.setupContactForms();
+                
+                // اختبار الاتصال عند التحميل
+                setTimeout(() => {
+                    this.checkAPIStatus();
+                }, 1000);
+            }
+
+            async checkAPIStatus() {
+                const isConnected = await this.telegramBot.testConnection();
+                if (!isConnected) {
+                    console.warn('⚠️ API غير متصل، سيتم استخدام النسخ الاحتياطية');
+                }
             }
 
             setupEventListeners() {
@@ -1484,6 +1627,15 @@ ${message}
                         e.preventDefault();
                         this.showLoginModal();
                         this.hideMobileMenu();
+                    });
+                }
+
+                // Contact button
+                const openContactBtn = document.getElementById('openContactBtn');
+                if (openContactBtn) {
+                    openContactBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.showContactModal();
                     });
                 }
 
@@ -1655,14 +1807,13 @@ ${message}
 
             hideModal(modal) {
                 modal.classList.remove('active');
-                this.hideAllModals();
+                document.body.style.overflow = '';
             }
 
             hideAllModals() {
                 document.querySelectorAll('.modal').forEach(modal => {
-                    modal.classList.remove('active');
+                    this.hideModal(modal);
                 });
-                document.body.style.overflow = '';
             }
 
             showLoginModal() {
@@ -1672,10 +1823,9 @@ ${message}
             hideLoginModal() {
                 const modal = document.getElementById('loginModal');
                 if (modal) {
-                    modal.classList.remove('active');
+                    this.hideModal(modal);
                 }
                 document.getElementById('loginForm').reset();
-                document.body.style.overflow = '';
             }
 
             showBookingModal(product) {
@@ -1690,10 +1840,9 @@ ${message}
             hideBookingModal() {
                 const modal = document.getElementById('bookingModal');
                 if (modal) {
-                    modal.classList.remove('active');
+                    this.hideModal(modal);
                 }
                 this.currentBookingProduct = null;
-                document.body.style.overflow = '';
             }
 
             showContactModal() {
@@ -1713,10 +1862,9 @@ ${message}
             hideContactModal() {
                 const modal = document.getElementById('contactModal');
                 if (modal) {
-                    modal.classList.remove('active');
+                    this.hideModal(modal);
                 }
                 document.getElementById('contactForm').reset();
-                document.body.style.overflow = '';
             }
 
             handleLogin() {
@@ -1769,15 +1917,36 @@ ${message}
 
                 const loadingToast = this.messageSystem.show('جاري إرسال الحجز...', 'info', 0);
                 
-                const success = await this.telegramBot.sendBooking(user, product, notes);
+                const result = await this.telegramBot.sendBooking(user, product, notes);
                 
                 this.messageSystem.hide(loadingToast);
                 
-                if (success) {
+                if (result.success) {
                     this.messageSystem.show('تم إرسال حجزك بنجاح! سيتواصل معك فريق الدعم قريباً.', 'success');
                     this.hideBookingModal();
+                    
+                    // إذا كان هناك رابط واتساب، نعرض رسالة إضافية
+                    if (result.whatsappLink && result.fallback) {
+                        setTimeout(() => {
+                            this.messageSystem.show(
+                                `يمكنك التواصل مباشرة عبر <a href="${result.whatsappLink}" target="_blank" style="color: var(--gold-light); text-decoration: underline;">الواتساب</a> لإكمال طلبك`,
+                                'info',
+                                8000
+                            );
+                        }, 1000);
+                    }
                 } else {
-                    this.messageSystem.show('حدث خطأ في إرسال الحجز. يرجى المحاولة مرة أخرى.', 'error');
+                    if (result.fallback && result.whatsappLink) {
+                        // عرض رسالة مع رابط واتساب بديل
+                        this.messageSystem.show(
+                            `تم حفظ طلبك. يمكنك التواصل معنا مباشرة عبر <a href="${result.whatsappLink}" target="_blank" style="color: var(--gold-light); text-decoration: underline;">الواتساب</a> لإكمال العملية`,
+                            'info',
+                            10000
+                        );
+                        this.hideBookingModal();
+                    } else {
+                        this.messageSystem.show('حدث خطأ في إرسال الحجز. يرجى المحاولة مرة أخرى.', 'error');
+                    }
                 }
             }
 
@@ -1812,11 +1981,11 @@ ${message}
 
                 const loadingToast = this.messageSystem.show('جاري إرسال الرسالة...', 'info', 0);
                 
-                const success = await this.telegramBot.sendContactMessage(user, message);
+                const result = await this.telegramBot.sendContactMessage(user, message);
                 
                 this.messageSystem.hide(loadingToast);
                 
-                if (success) {
+                if (result.success) {
                     this.messageSystem.show('تم إرسال رسالتك بنجاح! سيتواصل معك فريق الدعم قريباً.', 'success');
                     
                     if (formType === 'contactForm') {
@@ -1826,7 +1995,19 @@ ${message}
                         document.getElementById('contactSectionForm').reset();
                     }
                 } else {
-                    this.messageSystem.show('حدث خطأ في إرسال الرسالة. يرجى المحاولة مرة أخرى.', 'error');
+                    if (result.fallback && result.whatsappLink) {
+                        this.messageSystem.show(
+                            `يمكنك التواصل مباشرة عبر <a href="${result.whatsappLink}" target="_blank" style="color: var(--gold-light); text-decoration: underline;">الواتساب</a>`,
+                            'info',
+                            8000
+                        );
+                        
+                        if (formType === 'contactForm') {
+                            this.hideContactModal();
+                        }
+                    } else {
+                        this.messageSystem.show('حدث خطأ في إرسال الرسالة. يرجى المحاولة مرة أخرى.', 'error');
+                    }
                 }
             }
 
@@ -1882,20 +2063,18 @@ ${message}
                 });
 
                 // Animate product cards
-                // تعديل تأثير GSAP للمنتجات
                 gsap.from('.product-card', {
                     duration: 0.8,
                     y: 50,
                     opacity: 0,
                     stagger: 0.1,
                     ease: 'power2.out',
-                    clearProps: "opacity", // تنظيف الخاصية بعد الانتهاء
+                    clearProps: "opacity",
                     scrollTrigger: {
                         trigger: '.products',
                         start: 'top 80%',
                         toggleActions: 'play none none none',
                         onEnter: () => {
-                            // إعادة تعيين الخلفيات بعد التحميل
                             document.querySelectorAll('.product-card').forEach(card => {
                                 card.style.background = 'rgba(26, 26, 26, 0.85)';
                             });
@@ -2104,20 +2283,6 @@ ${message}
                     });
                 }
             });
-        });
-
-        // Add open contact modal button event listener
-        document.addEventListener('DOMContentLoaded', function() {
-            const openContactBtn = document.createElement('button');
-            openContactBtn.className = 'btn btn-secondary';
-            openContactBtn.id = 'openContactBtn';
-            openContactBtn.innerHTML = '<i class="fas fa-envelope"></i> تواصل معنا';
-            openContactBtn.addEventListener('click', () => store.showContactModal());
-            
-            const ctaButtons = document.querySelector('.cta-buttons');
-            if (ctaButtons) {
-                ctaButtons.appendChild(openContactBtn);
-            }
         });
 
         // GSAP Animations
