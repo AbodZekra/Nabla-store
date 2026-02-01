@@ -120,4 +120,3 @@ window.nablaProducts = [
     badge: "مثالي للشركات الناشئة و الافراد"
   }
 ];
-
