@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
     <!-- تضمين ملف الإعدادات - سيكون خارج git -->
     <script src="config.js"></script>
+    <script src="products-data.js"></script>
     <style>
         /* ===== RESET & BASE ===== */
         * {
@@ -662,9 +663,9 @@
 
         /* ===== CONTACT FORM SECTION ===== */
         .contact-section {
-            padding: 120px 0;
-            background: rgba(0, 0, 0, 0.2);
-            margin-top: 50px;
+            padding: 10px 10px;
+            background: rgba(0, 0, 0, 0);
+            margin-top: 10px;
         }
 
         .contact-form-container {
@@ -1116,9 +1117,6 @@
                     <button class="btn btn-primary" id="viewProductsBtn">
                         <i class="fas fa-shopping-cart"></i> تصفح المنتجات
                     </button>
-                    <button class="btn btn-secondary" id="loginBtnHero">
-                        <i class="fas fa-user"></i> تسجيل الدخول
-                    </button>
                 </div>
             </div>
         </section>
@@ -1215,13 +1213,10 @@
                         <a href="https://www.facebook.com/share/1Gqr9hEsbn/" target="_blank" title="فيسبوك">
                             <i class="fab fa-facebook"></i>
                         </a>
+                        <a href="mailto:nablastore3@gmail.com" target="_blank" title="بريد إلكتروني">
+                            <i class="fas fa-envelope"></i>
+                        </a>
                     </div>
-                </div>
-                <div>
-                    <h4 style="color: var(--gold-light); margin-bottom: 15px;">تواصل معنا</h4>
-                    <p style="margin-bottom: 10px;"><i class="fas fa-envelope"></i> info@nabla.tech</p>
-                    <p style="margin-bottom: 10px;"><i class="fas fa-phone"></i> +966 55 123 4567</p>
-                    <p style="margin-bottom: 10px;"><i class="fas fa-map-marker-alt"></i>إدلب , الجمهورية العربية السورية</p>
                 </div>
             </div>
             
@@ -1239,98 +1234,11 @@
     </div>
 
     <!-- JavaScript -->
-    <script>
+
+    
+    <script >
         // ===== PRODUCTS DATA =====
-        const products = [
-            {
-                id: 1,
-                name: "ChatGPT Plus",
-                category: "AI اشتراكات",
-                icon: "fas fa-robot",
-                description: "اشتراك شهري في ChatGPT Plus مع وصول إلى GPT-4 وميزات متقدمة",
-                price: 299,
-                period: "شهري",
-                features: ["وصول إلى GPT-4", "أولوية في أوقات الذروة", "مستندات طويلة", "دعم فني"],
-                badge: "الأكثر طلباً"
-            },
-            {
-                id: 2,
-                name: "Midjourney Pro",
-                category: "AI تصميم",
-                icon: "fas fa-palette",
-                description: "اشتراك Pro في Midjourney لإنشاء صور AI عالية الجودة",
-                price: 399,
-                period: "شهري",
-                features: ["30 ساعة سريعة", "خاصية Relax", "إنشاء صور خاصة", "دعم جماعي"],
-                badge: "جديد"
-            },
-            {
-                id: 3,
-                name: "NordVPN Premium",
-                category: "VPN",
-                icon: "fas fa-shield-alt",
-                description: "اشتراك سنوي في NordVPN مع حماية كاملة وخدمات متقدمة",
-                price: 599,
-                period: "سنوي",
-                features: ["خوادم في 60 دولة", "حماية من التسرب", "kill switch", "دعم 6 أجهزة"],
-                badge: "مميز"
-            },
-            {
-                id: 4,
-                name: "Adobe Creative Cloud",
-                category: "تصميم",
-                icon: "fas fa-film",
-                description: "حزمة كاملة من أدوبي للإبداع والتصميم الاحترافي",
-                price: 899,
-                period: "شهري",
-                features: ["Photoshop", "Premiere Pro", "After Effects", "Illustrator"],
-                badge: "احترافي"
-            },
-            {
-                id: 5,
-                name: "Notion AI",
-                category: "إنتاجية",
-                icon: "fas fa-lightbulb",
-                description: "اشتراك في Notion مع ميزات الذكاء الاصطناعي المتقدمة",
-                price: 199,
-                period: "شهري",
-                features: ["كتابة بالذكاء الاصطناعي", "تلخيص تلقائي", "ترجمة فورية", "دمج مع أدوات"],
-                badge: "منتج"
-            },
-            {
-                id: 6,
-                name: "Surfshark VPN",
-                category: "VPN",
-                icon: "fas fa-user-shield",
-                description: "VPN غير محدود مع حماية متقدمة وخصوصية كاملة",
-                price: 449,
-                period: "سنوي",
-                features: ["أجهزة غير محدودة", "حظر إعلانات", "بحث خاص", "تنبيهات الاختراق"],
-                badge: "اقتصادي"
-            },
-            {
-                id: 7,
-                name: "Claude Pro",
-                category: "AI اشتراكات",
-                icon: "fas fa-brain",
-                description: "اشتراك Pro في Claude AI مع سعة أكبر ودعم متقدم",
-                price: 349,
-                period: "شهري",
-                features: ["سياق أكبر", "مرفقات متعددة", "أولوية الوصول", "دعم فني"],
-                badge: "متقدم"
-            },
-            {
-                id: 8,
-                name: "Canva Pro",
-                category: "تصميم",
-                icon: "fas fa-paint-brush",
-                description: "اشتراك Pro في Canva مع مكتبة كبيرة من القوالب والأصول",
-                price: 249,
-                period: "شهري",
-                features: ["مكتبة قوالب", "خلفيات متحركة", "إزالة الخلفية", "فريق تعاون"],
-                badge: "سهل"
-            }
-        ];
+        const products = window.nablaProducts;
 
         // ===== MESSAGE SYSTEM =====
         class MessageSystem {
@@ -1446,7 +1354,7 @@
             }
 
             async sendBooking(user, product, notes = '') {
-                const whatsappLink = `${this.whatsappLink(user)}?text=${encodeURIComponent(`اهلا وسهلا استاذ ${user.name} لقد قمت بطلب ${product.name} بسعر ${product.price} ريال لاكمال عملية للحصول على الخدمة يمكنك مراسلتنا هنا`)}`;
+                const whatsappLink = `${this.whatsappLink(user)}?text=${encodeURIComponent(`السلام عليكم ورحمة الله وبركاته  \nاهلا وسهلا استاذ  ${user.name} لقد قمت بطلب ${product.name} بسعر ${product.price} ريال لاكمال العملية والحصول على الخدمة الكاملة يمكنك مراسلتنا هنا`)}`;
                 
                 const message = `
 📦 **حجز جديد من متجر Nabla**
@@ -1974,16 +1882,24 @@ ${message}
                 });
 
                 // Animate product cards
+                // تعديل تأثير GSAP للمنتجات
                 gsap.from('.product-card', {
                     duration: 0.8,
                     y: 50,
                     opacity: 0,
                     stagger: 0.1,
                     ease: 'power2.out',
+                    clearProps: "opacity", // تنظيف الخاصية بعد الانتهاء
                     scrollTrigger: {
                         trigger: '.products',
                         start: 'top 80%',
-                        toggleActions: 'play none none none'
+                        toggleActions: 'play none none none',
+                        onEnter: () => {
+                            // إعادة تعيين الخلفيات بعد التحميل
+                            document.querySelectorAll('.product-card').forEach(card => {
+                                card.style.background = 'rgba(26, 26, 26, 0.85)';
+                            });
+                        }
                     }
                 });
             }
