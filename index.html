@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>∇ Nabla Store - المتجر الرقمي</title>
+    <title>∇ Nabla Store </title>
     <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -2199,7 +2199,6 @@
             <!-- Mobile Menu Toggle -->
             <button class="mobile-menu-toggle" id="menuToggle">
                 <i class="fas fa-bars"></i>
-                <span>القائمة</span>
             </button>
         </div>
     </header>
@@ -2656,7 +2655,7 @@ async function handleBooking(e) {
     submitBtn.innerHTML = '<i class="fas fa-spinner"></i> جاري المعالجة...';
     
     const notes = document.getElementById('bookingNotes').value;
-    const whatsappLink = `https://wa.me/${currentUser.whatsapp}?text=${encodeURIComponent(`السلام عليكم ورحمة الله وبركاته\nاهلاً ${currentUser.name}،\nتم استلام طلبك لمنتج ${currentProduct.name} بسعر ${currentProduct.price}$ ${currentProduct.period}\nسيتم التواصل معك قريباً لإتمام العملية.\nشكراً لثقتك بمتجر Nabla ✨`)}`;
+    const whatsappLink = `https://wa.me/${currentUser.whatsapp}?text=${encodeURIComponent(`السلام عليكم ورحمة الله وبركاته\nاهلاً ${currentUser.name}،\nتم استلام طلبك لمنتج ${currentProduct.name} بسعر ${currentProduct.price}$ ${currentProduct.period}\nيمكنك مراسلتنا هنا لإتمام عملية الشراء .\nشكراً لثقتك بمتجر Nabla ✨`)}`;
     
     const message = `
 🚀 **طلب جديد - متجر Nabla**
